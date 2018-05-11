@@ -4,7 +4,6 @@ import (
 	"C"
 	"fmt"
 	geth "github.com/ethereum/go-ethereum/mobile"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 )
 
@@ -27,7 +26,7 @@ func StartNode(configJSON *C.char) *C.char {
 	account, err := ks.NewAccount("test")
 	config := geth.NewNodeConfig()
 	config.PssEnabled = true
-	config.PssAccount = account.Address.Str()
+	config.PssAccount = account.GetAddress().GetHex()
 	config.PssPassword = "test"
 	nod, err := geth.NewNodeWithKeystore(dir, config, ks)
 	if err != nil {
@@ -35,5 +34,5 @@ func StartNode(configJSON *C.char) *C.char {
 	}
 	nod.Start()
 	defer nod.Stop()
-	return C.CString(fmt.Sprintf("%v", nod))
+	return C.CString(fmt.Sprintf("%v", config.PssAccount))
 }
