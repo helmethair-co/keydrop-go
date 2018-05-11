@@ -3,6 +3,7 @@ package main
 import (
 	"C"
 	"fmt"
+	"os"
 	geth "github.com/ethereum/go-ethereum/mobile"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 )
@@ -10,14 +11,16 @@ import (
 //StartNode - start the Swarm node
 //export StartNode
 func StartNode(configJSON *C.char) *C.char {
-	dir := C.GoString(configJSON)
-	/*if _, err := os.Stat(dir); err != nil {
+	dir := C.GoString(configJSON) + "/ethereum"
+	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			// file does not exist
-		} else {
-			// other error
+			err := os.Mkdir(dir, os.ModeDir)
+			if err != nil {
+				return C.CString("error 1: " + err.Error())
+			}
 		}
-	}*/
+	}
+
 
 	ks := geth.NewKeyStore(fmt.Sprintf("%s/keystore", dir), keystore.LightScryptN, keystore.LightScryptP)
 //	accountManager := accounts.NewManager(ks)
@@ -30,9 +33,11 @@ func StartNode(configJSON *C.char) *C.char {
 	config.PssPassword = "test"
 	nod, err := geth.NewNodeWithKeystore(dir, config, ks)
 	if err != nil {
-		return C.CString(err.Error())
+		return  C.CString("error 2: " + err.Error())
 	}
-	nod.Start()
-	defer nod.Stop()
+	err = nod.Start()
+	if err != nil {
+		return  C.CString("error 3: " + err.Error())
+	}
 	return C.CString(fmt.Sprintf("%v", config.PssAccount))
 }
