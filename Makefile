@@ -60,10 +60,8 @@ keydropgo-cross: keydropgo-android keydropgo-ios
 	@echo "Full cross compilation done."
 	@ls -ld $(GOBIN)/keydropgo-*
 
-keydropgo-android: xgo ##@cross-compile Build keydrop-go for Android
-	./_assets/patches/patcher -b . -p geth-xgo
+keydropgo-android: ##@cross-compile Build keydrop-go for Android
 	$(GOPATH)/bin/xgo --go=$(GO) -out keydropgo --dest=$(GOBIN) --targets=android-16/aar -v -tags '$(BUILD_TAGS)' $(BUILD_FLAGS) ./lib
-	./_assets/patches/patcher -b . -p geth-xgo -r
 	@echo "Android cross compilation done."
 
 keydropgo-ios: xgo	##@cross-compile Build keydrop-go for iOS
