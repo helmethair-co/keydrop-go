@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	geth "github.com/ethereum/go-ethereum/mobile"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 //export Node
@@ -19,6 +22,10 @@ var nod *geth.Node
 //StartNode - start the Swarm node
 //export StartNode
 func StartNode(configJSON *C.char) *C.char {
+	OverrideRootLog(true, "debug", C.GoString(configJSON)+"/go.log", false)
+
+	log.Info("------ GO log -------")
+
 	fmt.Println("----------- starting node ---------------")
 	dir := C.GoString(configJSON) + "/ethereum/keystore"
 	if _, err := os.Stat(dir); err != nil {
@@ -86,4 +93,49 @@ func StopNode() *C.char {
 	}
 	return C.CString("ok")
 
+}
+
+// OverrideRootLog overrides root logger with file handler, if defined,
+// and log level (defaults to INFO).
+func OverrideRootLog(enabled bool, levelStr string, logFile string, terminal bool) error {
+	if !enabled {
+		disableRootLog()
+		return nil
+	}
+
+	return enableRootLog(levelStr, logFile, terminal)
+}
+
+func disableRootLog() {
+	log.Root().SetHandler(log.DiscardHandler())
+}
+
+func enableRootLog(levelStr string, logFile string, terminal bool) error {
+	var (
+		handler log.Handler
+		err     error
+	)
+
+	if logFile != "" {
+		handler, err = log.FileHandler(logFile, log.LogfmtFormat())
+		if err != nil {
+			return err
+		}
+	} else {
+		handler = log.StreamHandler(os.Stdout, log.TerminalFormat(terminal))
+	}
+
+	if levelStr == "" {
+		levelStr = "INFO"
+	}
+
+	level, err := log.LvlFromString(strings.ToLower(levelStr))
+	if err != nil {
+		return err
+	}
+
+	filteredHandler := log.LvlFilterHandler(level, handler)
+	log.Root().SetHandler(filteredHandler)
+
+	return nil
 }
