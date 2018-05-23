@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	geth "github.com/ethereum/go-ethereum/mobile"
 
@@ -17,16 +18,15 @@ import (
 )
 
 //export Node
-var nod *geth.Node
+var node *geth.Node
 
 //StartNode - start the Swarm node
 //export StartNode
 func StartNode(configJSON *C.char) *C.char {
-	OverrideRootLog(true, "debug", C.GoString(configJSON)+"/go.log", false)
+	// set logging to stdout
+	OverrideRootLog(true, "debug", "", false)
 
-	log.Info("------ GO log -------")
-
-	fmt.Println("----------- starting node ---------------")
+	log.Info("----------- starting node ---------------")
 	dir := C.GoString(configJSON) + "/ethereum/keystore"
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
@@ -50,17 +50,39 @@ func StartNode(configJSON *C.char) *C.char {
 	config.PssEnabled = true
 	config.PssAccount = account.GetAddress().GetHex()
 	config.PssPassword = "test"
-	nod, err = geth.NewNodeWithKeystore(dir, config, ks)
+	node, err = geth.NewNodeWithKeystore(dir, config, ks)
 	if err != nil {
 		return C.CString("error 2: " + err.Error())
 	}
-	err = nod.Start()
-	fmt.Println("----------- node started ---------------")
-
+	err = node.Start()
 	if err != nil {
 		return C.CString("error 3: " + err.Error())
 	}
+
+	go logPeers(30 * time.Second)
+
+	log.Info("----------- node started ---------------")
 	return C.CString(fmt.Sprintf("%v", config.PssAccount))
+}
+
+func logPeers(wait time.Duration) {
+	info := node.GetNodeInfo()
+	log.Info(fmt.Sprintf("ID: %s", info.GetID()))
+	log.Info(fmt.Sprintf("Name: %s", info.GetName()))
+	log.Info(fmt.Sprintf("Enode: %s", info.GetEnode()))
+	log.Info(fmt.Sprintf("IP: %s", info.GetIP()))
+	log.Info(fmt.Sprintf("DiscoveryPort: %d", info.GetDiscoveryPort()))
+	log.Info(fmt.Sprintf("ListenerPort: %d", info.GetListenerPort()))
+	log.Info(fmt.Sprintf("ListenerAddress: %s", info.GetListenerAddress()))
+
+	for node != nil {
+		time.Sleep(wait)
+		// TODO - this code crashes for unknown reasons
+		// peers := node.GetPeersInfo()
+		// if peers != nil {
+		// 	log.Info(fmt.Sprintf("Number of peers: %d", peers.Size()))
+		// }
+	}
 }
 
 //CreateIdentity -
@@ -87,7 +109,7 @@ func CreateIdentity() *C.char {
 //StopNode -
 //export StopNode
 func StopNode() *C.char {
-	err := nod.Stop()
+	err := node.Stop()
 	if err != nil {
 		return C.CString("error stopping node: " + err.Error())
 	}
