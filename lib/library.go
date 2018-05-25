@@ -20,9 +20,24 @@ import (
 //export Node
 var node *geth.Node
 
+const defaultBootnodeURL = "enode://867ba5f6ac80bec876454caa80c3d5b64579828bd434a972bd8155060cac36226ba6e4599d955591ebdd1b2670da13cbaba3878928f3cd23c55a4e469a927870@13.79.37.4:30399"
+
+func getBootnodes() (enodes *geth.Enodes, _ error) {
+	nodes := geth.NewEnodes(1)
+	enode, err := geth.NewEnode(defaultBootnodeURL)
+	if err != nil {
+		return nil, err
+	}
+	nodes.Set(0, enode)
+	return nodes, nil
+}
+
 //StartNode - start the Swarm node
 //export StartNode
 func StartNode(configJSON *C.char) *C.char {
+	if node != nil {
+		return C.CString("error 0: already started")
+	}
 	// set logging to stdout
 	OverrideRootLog(true, "debug", "", false)
 
@@ -47,9 +62,14 @@ func StartNode(configJSON *C.char) *C.char {
 	}
 
 	config := geth.NewNodeConfig()
+	config.BootstrapNodes, err = getBootnodes()
+	if err != nil {
+		return C.CString("error 1.8 " + err.Error())
+	}
 	config.PssEnabled = true
 	config.PssAccount = account.GetAddress().GetHex()
 	config.PssPassword = "test"
+	config.MaxPeers = 32
 	node, err = geth.NewNodeWithKeystore(dir, config, ks)
 	if err != nil {
 		return C.CString("error 2: " + err.Error())
@@ -75,13 +95,22 @@ func logPeers(wait time.Duration) {
 	log.Info(fmt.Sprintf("ListenerPort: %d", info.GetListenerPort()))
 	log.Info(fmt.Sprintf("ListenerAddress: %s", info.GetListenerAddress()))
 
+	// this is not completely thread-safe
 	for node != nil {
+		peers := node.GetPeersInfo()
+		if peers != nil {
+			log.Info(fmt.Sprintf("Number of peers: %d", peers.Size()))
+			for i := 0; i < peers.Size(); i++ {
+				peerInfo, _ := peers.Get(i)
+				log.Info(fmt.Sprintf("Peer: %d", i))
+				log.Info(fmt.Sprintf("Peer name: %s", peerInfo.GetName()))
+				log.Info(fmt.Sprintf("Peer ID: %s", peerInfo.GetID()))
+				log.Info(fmt.Sprintf("Peer local address: %s", peerInfo.GetLocalAddress()))
+				log.Info(fmt.Sprintf("Peer remote address: %s", peerInfo.GetRemoteAddress()))
+			}
+		}
+
 		time.Sleep(wait)
-		// TODO - this code crashes for unknown reasons
-		// peers := node.GetPeersInfo()
-		// if peers != nil {
-		// 	log.Info(fmt.Sprintf("Number of peers: %d", peers.Size()))
-		// }
 	}
 }
 
@@ -113,6 +142,7 @@ func StopNode() *C.char {
 	if err != nil {
 		return C.CString("error stopping node: " + err.Error())
 	}
+	node = nil
 	return C.CString("ok")
 
 }
