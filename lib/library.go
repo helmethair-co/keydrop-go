@@ -138,6 +138,9 @@ func CreateIdentity() *C.char {
 //StopNode -
 //export StopNode
 func StopNode() *C.char {
+	if node == nil {
+		return C.CString("node already stopped")
+	}
 	err := node.Stop()
 	if err != nil {
 		return C.CString("error stopping node: " + err.Error())
