@@ -21,6 +21,7 @@ import (
 var node *geth.Node
 
 const defaultBootnodeURL = "enode://867ba5f6ac80bec876454caa80c3d5b64579828bd434a972bd8155060cac36226ba6e4599d955591ebdd1b2670da13cbaba3878928f3cd23c55a4e469a927870@13.79.37.4:30399"
+const passphrase = "test"
 
 func getBootnodes() (enodes *geth.Enodes, _ error) {
 	nodes := geth.NewEnodes(1)
@@ -39,7 +40,7 @@ func StartNode(configJSON *C.char) *C.char {
 		return C.CString("error 0: already started")
 	}
 	// set logging to stdout
-	OverrideRootLog(true, "debug", "", false)
+	OverrideRootLog(true, "trace", "", false)
 
 	log.Info("----------- starting node ---------------")
 	dir := C.GoString(configJSON) + "/ethereum/keystore"
@@ -56,7 +57,7 @@ func StartNode(configJSON *C.char) *C.char {
 
 	ks := geth.NewKeyStore(dir, keystore.LightScryptN, keystore.LightScryptP)
 
-	account, err := ks.NewAccount("test")
+	account, err := ks.NewAccount(passphrase)
 	if err != nil {
 		return C.CString("error 1.7: " + err.Error())
 	}
@@ -66,9 +67,11 @@ func StartNode(configJSON *C.char) *C.char {
 	if err != nil {
 		return C.CString("error 1.8 " + err.Error())
 	}
+	config.EthereumEnabled = false
+	config.WhisperEnabled = false
 	config.PssEnabled = true
 	config.PssAccount = account.GetAddress().GetHex()
-	config.PssPassword = "test"
+	config.PssPassword = passphrase
 	config.MaxPeers = 32
 	node, err = geth.NewNodeWithKeystore(dir, config, ks)
 	if err != nil {
@@ -189,8 +192,14 @@ func enableRootLog(levelStr string, logFile string, terminal bool) error {
 		return err
 	}
 
-	filteredHandler := log.LvlFilterHandler(level, handler)
-	log.Root().SetHandler(filteredHandler)
+	// filteredHandler := log.LvlFilterHandler(level, handler)
+	// log.Root().SetHandler(filteredHandler)
+
+	vmodule := "swarm/pss=6"
+	glogger := log.NewGlogHandler(handler)
+	glogger.Verbosity(log.Lvl(level))
+	glogger.Vmodule(vmodule)
+	log.Root().SetHandler(glogger)
 
 	return nil
 }
