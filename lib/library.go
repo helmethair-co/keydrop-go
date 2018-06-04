@@ -35,7 +35,7 @@ func getBootnodes() (enodes *geth.Enodes, _ error) {
 
 //StartNode - start the Swarm node
 //export StartNode
-func StartNode(configJSON *C.char) *C.char {
+func StartNode(path, listenAddr *C.char) *C.char {
 	if node != nil {
 		return C.CString("error 0: already started")
 	}
@@ -43,7 +43,7 @@ func StartNode(configJSON *C.char) *C.char {
 	OverrideRootLog(true, "trace", "", false)
 
 	log.Info("----------- starting node ---------------")
-	dir := C.GoString(configJSON) + "/ethereum/keystore"
+	dir := C.GoString(path) + "/ethereum/keystore"
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
 			err := os.MkdirAll(dir, 0700)
@@ -73,6 +73,8 @@ func StartNode(configJSON *C.char) *C.char {
 	config.PssAccount = account.GetAddress().GetHex()
 	config.PssPassword = passphrase
 	config.MaxPeers = 32
+	config.ListenAddr = C.GoString(listenAddr)
+
 	node, err = geth.NewNodeWithKeystore(dir, config, ks)
 	if err != nil {
 		return C.CString("error 2: " + err.Error())
