@@ -23,9 +23,9 @@ var node *geth.Node
 const defaultBootnodeURL = "enode://867ba5f6ac80bec876454caa80c3d5b64579828bd434a972bd8155060cac36226ba6e4599d955591ebdd1b2670da13cbaba3878928f3cd23c55a4e469a927870@13.79.37.4:30399"
 const passphrase = "test"
 
-func getBootnodes() (enodes *geth.Enodes, _ error) {
+func getBootnodes(bootnodeURL string) (enodes *geth.Enodes, _ error) {
 	nodes := geth.NewEnodes(1)
-	enode, err := geth.NewEnode(defaultBootnodeURL)
+	enode, err := geth.NewEnode(bootnodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -33,9 +33,16 @@ func getBootnodes() (enodes *geth.Enodes, _ error) {
 	return nodes, nil
 }
 
+func getBootnodeURL(bootnodeURL string) string {
+	if bootnodeURL == "" {
+		return defaultBootnodeURL
+	}
+	return bootnodeURL
+}
+
 //StartNode - start the Swarm node
 //export StartNode
-func StartNode(path, listenAddr *C.char) *C.char {
+func StartNode(path, listenAddr, cBootnodeURL *C.char) *C.char {
 	if node != nil {
 		return C.CString("error 0: already started")
 	}
@@ -63,7 +70,7 @@ func StartNode(path, listenAddr *C.char) *C.char {
 	}
 
 	config := geth.NewNodeConfig()
-	config.BootstrapNodes, err = getBootnodes()
+	config.BootstrapNodes, err = getBootnodes(getBootnodeURL(C.GoString(cBootnodeURL)))
 	if err != nil {
 		return C.CString("error 1.8 " + err.Error())
 	}
