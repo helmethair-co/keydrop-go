@@ -42,12 +42,12 @@ func getBootnodeURL(bootnodeURL string) string {
 
 //StartNode - start the Swarm node
 //export StartNode
-func StartNode(path, listenAddr, cBootnodeURL *C.char) *C.char {
+func StartNode(path, listenAddr, cBootnodeURL, loglevel *C.char) *C.char {
 	if node != nil {
 		return C.CString("error 0: already started")
 	}
 	// set logging to stdout
-	OverrideRootLog(true, "trace", "", false)
+	OverrideRootLog(true, C.GoString(loglevel), "", false)
 
 	log.Info("----------- starting node ---------------")
 	dir := C.GoString(path) + "/ethereum/keystore"
@@ -70,16 +70,12 @@ func StartNode(path, listenAddr, cBootnodeURL *C.char) *C.char {
 	}
 
 	config := geth.NewNodeConfig()
-	config.BootstrapNodes, err = getBootnodes(getBootnodeURL(C.GoString(cBootnodeURL)))
-	if err != nil {
-		return C.CString("error 1.8 " + err.Error())
-	}
 	config.EthereumEnabled = false
 	config.WhisperEnabled = false
 	config.PssEnabled = true
 	config.PssAccount = account.GetAddress().GetHex()
 	config.PssPassword = passphrase
-	config.MaxPeers = 32
+	config.MaxPeers = 0
 	config.ListenAddr = C.GoString(listenAddr)
 
 	node, err = geth.NewNodeWithKeystore(dir, config, ks)
@@ -89,6 +85,11 @@ func StartNode(path, listenAddr, cBootnodeURL *C.char) *C.char {
 	err = node.Start()
 	if err != nil {
 		return C.CString("error 3: " + err.Error())
+	}
+
+	err = node.AddPeer(getBootnodeURL(C.GoString(cBootnodeURL)))
+	if err != nil {
+		return C.CString("error 4: " + err.Error())
 	}
 
 	go logPeers(30 * time.Second)
