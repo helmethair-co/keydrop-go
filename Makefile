@@ -18,7 +18,7 @@ BUILD_FLAGS := $(shell echo "-ldflags '-X main.buildStamp=`date -u '+%Y-%m-%d.%H
 GO ?= latest
 XGOVERSION ?= 1.10.x
 XGOIMAGE = keydropteam/xgo:$(XGOVERSION)
-XGOIMAGEIOSSIM = keydropteam/xgo-ios-simulator:$(XGOVERSION)
+XGOIMAGEIOSSIM = statusteam/xgo-ios-simulator:$(XGOVERSION)
 
 networkid ?= keydropChain
 gotest_extraflags =
@@ -71,7 +71,7 @@ keydropgo-ios: xgo	##@cross-compile Build keydrop-go for iOS
 	@echo "iOS framework cross compilation done."
 
 keydropgo-ios-simulator:	##@cross-compile Build keydrop-go for iOS Simulator
-	$(GOPATH)/bin/xgo --go=$(GO) -out keydropgo --dest=$(GOBIN) --targets=ios-9.3/framework -v -tags '$(BUILD_TAGS)' $(BUILD_FLAGS) ./lib
+	$(GOPATH)/bin/xgo --image $(XGOIMAGEIOSSIM) --go=$(GO) -out keydropgo --dest=$(GOBIN) --targets=ios-9.3/framework -v -tags '$(BUILD_TAGS)' $(BUILD_FLAGS) ./lib
 	@echo "iOS framework cross compilation done."
 
 keydropgo-library: ##@cross-compile Build keydrop-go as static library for current platform
@@ -93,6 +93,10 @@ xgo-docker-images: ##@docker Build xgo docker images
 	@echo "Building xgo docker images..."
 	docker build _assets/build/xgo/base -t $(XGOIMAGE)
 	docker build _assets/build/xgo/ios-simulator -t $(XGOIMAGEIOSSIM)
+
+xgo-docker-simulator-image:
+	@echo "Building xgo simulator docker images..."
+	docker build assets/ios-simulator -t $(XGOIMAGEIOSSIM)
 
 xgo:
 	docker pull $(XGOIMAGE)
