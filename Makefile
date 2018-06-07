@@ -9,6 +9,8 @@ ifndef GOPATH
 	For more information about the GOPATH environment variable, see https://golang.org/doc/code.html#GOPATH)
 endif
 
+VERSION := 0.0.1
+
 CGO_CFLAGS=-I/$(JAVA_HOME)/include -I/$(JAVA_HOME)/include/darwin
 GOBIN=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))build/bin
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
@@ -62,6 +64,7 @@ keydropgo-cross: keydropgo-android keydropgo-ios
 
 keydropgo-android: ##@cross-compile Build keydrop-go for Android
 	$(GOPATH)/bin/xgo --go=$(GO) -out keydropgo --dest=$(GOBIN) --targets=android-16/aar -v -tags '$(BUILD_TAGS)' $(BUILD_FLAGS) ./lib
+	@mv build/bin/keydropgo-android-16.aar build/bin/keydropgo-$(VERSION).aar
 	@echo "Android cross compilation done."
 
 keydropgo-ios: xgo	##@cross-compile Build keydrop-go for iOS
