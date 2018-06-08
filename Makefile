@@ -19,7 +19,7 @@ BUILD_FLAGS := $(shell echo "-ldflags '-X main.buildStamp=`date -u '+%Y-%m-%d.%H
 
 GO ?= latest
 XGOVERSION ?= 1.10.x
-XGOIMAGE = keydropteam/xgo:$(XGOVERSION)
+XGOIMAGE = statusteam/xgo:$(XGOVERSION)
 XGOIMAGEIOSSIM = statusteam/xgo-ios-simulator:$(XGOVERSION)
 
 networkid ?= keydropChain
@@ -68,9 +68,7 @@ keydropgo-android: ##@cross-compile Build keydrop-go for Android
 	@echo "Android cross compilation done."
 
 keydropgo-ios: xgo	##@cross-compile Build keydrop-go for iOS
-	./_assets/patches/patcher -b . -p geth-xgo
 	$(GOPATH)/bin/xgo --go=$(GO) -out keydropgo --dest=$(GOBIN) --targets=ios-9.3/framework -v -tags '$(BUILD_TAGS)' $(BUILD_FLAGS) ./lib
-	./_assets/patches/patcher -b . -p geth-xgo -r
 	@echo "iOS framework cross compilation done."
 
 keydropgo-ios-simulator:	##@cross-compile Build keydrop-go for iOS Simulator
