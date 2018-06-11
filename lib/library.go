@@ -76,7 +76,6 @@ func StartNode(path, listenAddr, cBootnodeURL, loglevel *C.char) *C.char {
 	config.PssAccount = account.GetAddress().GetHex()
 	config.PssPassword = passphrase
 	config.MaxPeers = 0
-	config.ListenAddr = C.GoString(listenAddr)
 
 	node, err = geth.NewNodeWithKeystore(dir, config, ks)
 	if err != nil {
