@@ -34,4 +34,4 @@ Make iOS version:
 
 ` $ make keydropgo-ios-simulator`
 
-This will build an iOS framework, called `Keydropgo.framework` in the `build/bin/keydropgo-ios-9.3-framework` directory. You can copy this directory to your iOS project. At the moment this only work in the simulator.
+This will build an iOS framework, called `Keydropgo.framework` in the `build/bin/keydropgo-ios-9.3-framework` directory. You can copy this directory to your iOS project. At the moment this will only work in the simulator.
